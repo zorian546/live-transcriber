@@ -232,12 +232,14 @@ source = { virtual = "." }
 dependencies = [
     { name = "av" },
     { name = "faster-whisper" },
+    { name = "numpy" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "av", specifier = "==17.0.1" },
     { name = "faster-whisper", specifier = "==1.2.1" },
+    { name = "numpy", specifier = "==2.5.4" },
 ]
 
 [[package]]
