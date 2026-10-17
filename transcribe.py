@@ -1,7 +1,8 @@
 import argparse
 from pathlib import Path
 from av.error import FFmpegError
-from faster_whisper import WhisperModel,decode_audio
+from faster_whisper import decode_audio
+from recognizer import SpeechRecognizer
 from time import perf_counter
 
 def main()->None:
@@ -30,23 +31,11 @@ def main()->None:
     
     print("loading speech model....")
     model_started=perf_counter()
-    model=WhisperModel(
-        "Systran/faster-whisper-base.en",
-        revision="3d3d5dee26484f91867d81cb899cfcf72b96be6c",
-        device="cpu",
-        compute_type="int8"
-    )
+    recognizer=SpeechRecognizer()
     model_seconds=perf_counter()-model_started
     print("Transcribing")
     transcription_started=perf_counter()
-    segments,_=model.transcribe(
-        audio,
-        language="en",
-        beam_size=5,
-        word_timestamps=True,
-        condition_on_previous_text=True
-    )    
-    segments=list(segments)
+    segments=recognizer.transcribe(audio)
     transcription_seconds=perf_counter()-transcription_started
     
     found_text=False
