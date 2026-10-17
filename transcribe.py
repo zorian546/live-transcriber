@@ -1,5 +1,7 @@
 import argparse
 from pathlib import Path
+from av.error import FFmpegError
+from faster_whisper import decode_audio
 
 def main()->None:
     parser=argparse.ArgumentParser(
@@ -13,7 +15,18 @@ def main()->None:
     args=parser.parse_args()
     if not args.audio_path.is_file():
         parser.error(f"file not found: {args.audio_path}")
-    print(f"selected input: {args.audio_path}")
+    try:
+        audio=decode_audio(
+            str(args.audio_path),
+            sampling_rate=16000
+        )
+    except (FFmpegError,ValueError,IndexError,OSError) as error:
+        parser.error(f"cannot decode audio: {error}")
+        
+    if audio.size==0:
+        parser.error("the input contains no audio samples")
+    print(f"audio decoded successfully: {audio.size} samples")
+    
     
 if __name__=="__main__":
     main()
