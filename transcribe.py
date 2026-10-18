@@ -5,6 +5,7 @@ from faster_whisper import decode_audio
 from recognizer import SpeechRecognizer
 from time import perf_counter
 from replay import iter_replay_updates
+from transcript import TranscriptState,words_from_segments
 
 def main()->None:
     parser=argparse.ArgumentParser(
@@ -43,11 +44,27 @@ def main()->None:
     model_seconds=perf_counter()-model_started
     if args.replay:
         print(f"Model setup: {model_seconds:.2f}s")
-        
+        state=TranscriptState()
         for audio_seconds,segments in iter_replay_updates(audio,recognizer):
-            text=" ".join(segment.text.strip() for segment in segments if segment.text.strip())
-            print(f"\n[Provisional-{audio_seconds:.2f}s received]")
-            print(text or "(no speech recognized)")
+            words=words_from_segments(segments)
+            print(f"\n[Audio received: {audio_seconds:.2f}s]")
+            try:
+                state.update(words)
+            except ValueError as error:
+                print(f"Agreement conflict: {error}")
+                print("Keeping previous transcript state")
+                print(
+                    "rejected hypothesis:",
+                    " ".join(word.text for word in words)or "(none)"
+                )
+            committed_text=" ".join(
+                word.text for word in state.committed
+            )
+            provisional_text=" ".join(
+                word.text for word in state.provisional
+            )
+            print("Committed: ",committed_text or "(none)")
+            print("Provisional: ",provisional_text or "(none)")
         return
     print("Transcribing")
     transcription_started=perf_counter()
