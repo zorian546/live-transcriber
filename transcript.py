@@ -32,3 +32,20 @@ def matching_prefix_length(
         matched+=1
         
     return matched
+
+class TranscriptState:
+    def __init__(self):
+        self.committed:list[TranscriptWord]=[]
+        self.provisional:list[TranscriptWord]=[]
+        
+    def update(self,words:list[TranscriptWord])->list[TranscriptWord]:
+        committed_count=len(self.committed)
+        
+        if matching_prefix_length(self.committed,words)!=committed_count:
+            raise ValueError("new transcripts conflicts with committed words")
+        pending=words[committed_count:]
+        matched=matching_prefix_length(self.provisional,pending)
+        newly_committed=pending[:matched]
+        self.committed.extend(newly_committed)
+        self.provisional=pending[matched:]
+        return newly_committed
