@@ -4,6 +4,7 @@ from av.error import FFmpegError
 from faster_whisper import decode_audio
 from recognizer import SpeechRecognizer
 from time import perf_counter
+from replay import iter_replay_updates
 
 def main()->None:
     parser=argparse.ArgumentParser(
@@ -13,6 +14,11 @@ def main()->None:
         "audio_path",
         type=Path,
         help="Path to audio recording "
+    )
+    parser.add_argument(
+        "--replay",
+        action="store_true",
+        help="Show provisional transcript snapshots from accumulated audio"
     )
     args=parser.parse_args()
     if not args.audio_path.is_file():
@@ -28,11 +34,21 @@ def main()->None:
     if audio.size==0:
         parser.error("the input contains no audio samples")
     print(f"audio decoded successfully: {audio.size} samples")
+    if args.replay and audio.size>30*16000:
+        parser.error("Replay currently supports at most 30 seconds")
     
     print("loading speech model....")
     model_started=perf_counter()
     recognizer=SpeechRecognizer()
     model_seconds=perf_counter()-model_started
+    if args.replay:
+        print(f"Model setup: {model_seconds:.2f}s")
+        
+        for audio_seconds,segments in iter_replay_updates(audio,recognizer):
+            text=" ".join(segment.text.strip() for segment in segments if segment.text.strip())
+            print(f"\n[Provisional-{audio_seconds:.2f}s received]")
+            print(text or "(no speech recognized)")
+        return
     print("Transcribing")
     transcription_started=perf_counter()
     segments=recognizer.transcribe(audio)
